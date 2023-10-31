@@ -13,7 +13,7 @@ import jakarta.persistence.*;
 @NoArgsConstructor
 @Entity
 @Table(name="cart_items")
-public class CartItems {
+public class CartItem {
     @Id
     @GeneratedValue (strategy = GenerationType.IDENTITY)
     private Long id;
@@ -24,6 +24,6 @@ public class CartItems {
     @Column(name = "subtotal", length = 50)
     private double cartSubtotal;
 
-    @Column(name = "product_id", nullable = false)
-    private Long productId;
+    @Column(name = "shopping_cart_id", nullable = false)
+    private Long shoppingCartId;
 }

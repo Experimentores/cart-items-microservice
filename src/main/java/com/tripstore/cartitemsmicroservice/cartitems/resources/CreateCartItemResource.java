@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
-public class CreateCartItemsResource {
+public class CreateCartItemResource {
     @NotBlank
     @NotNull
     private int productQuantity;
@@ -12,6 +12,6 @@ public class CreateCartItemsResource {
     @NotNull
     private double cartSubtotal;
     @NotNull
-    @Positive(message = "Must be a valid product id")
-    private Long productId;
+    @Positive(message = "Must be a valid shopping cart id")
+    private Long shoppingCartId;
 }

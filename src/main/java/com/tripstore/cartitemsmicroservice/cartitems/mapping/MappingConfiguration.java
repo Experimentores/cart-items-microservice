@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration("behaviourMappingConfiguration")
 public class MappingConfiguration {
     @Bean
-    public CartItemsMapper tripMapper() {
-        return new CartItemsMapper();
+    public CartItemMapper tripMapper() {
+        return new CartItemMapper();
     }
 }
