@@ -1,7 +1,11 @@
-package com.tripstore.cartitemsmicroservice.controller;
+package com.tripstore.cartitemsmicroservice.cartitems.controller;
 
-import com.tripstore.cartitemsmicroservice.model.CartItems;
-import com.tripstore.cartitemsmicroservice.service.CartItemsService;
+import com.crudjpa.controller.CrudController;
+import com.tripstore.cartitemsmicroservice.cartitems.domain.model.CartItems;
+import com.tripstore.cartitemsmicroservice.cartitems.domain.services.ICartItemsService;
+import com.tripstore.cartitemsmicroservice.cartitems.mapping.CartItemsMapper;
+import com.tripstore.cartitemsmicroservice.cartitems.resources.CartItemsResource;
+import com.tripstore.cartitemsmicroservice.cartitems.resources.CreateCartItemsResource;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -12,12 +16,14 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/tripstore/v1")
-public class CartItemsController {
-    private final CartItemsService cartItemsService;
+public class CartItemsController extends CrudController<CartItems, Long, CartItemsResource, CreateCartItemsResource, CartItems> {
+    private final ICartItemsService cartItemsService;
+    private final CartItemsMapper cartItemsMapper;
 
-    @Autowired
-    public CartItemsController(CartItemsService cartItemsService) {
+    public CartItemsController(ICartItemsService cartItemsService, CartItemsMapper cartItemsMapper) {
+        super(cartItemsService, cartItemsMapper);
         this.cartItemsService = cartItemsService;
+        this.cartItemsMapper = cartItemsMapper;
     }
 
     // Endpoint: /api/tripstore/v1/cart-items
@@ -32,16 +38,8 @@ public class CartItemsController {
     // Method: GET
     @Transactional(readOnly = true)
     @GetMapping("/cart-items/{id}")
-    public ResponseEntity<CartItems> getCartItemsById(@PathVariable int id) {
+    public ResponseEntity<CartItems> getCartItemsById(@PathVariable Long id) {
         return new ResponseEntity<>(cartItemsService.getCartItemsById(id), HttpStatus.OK);
-    }
-
-    // Endpoint: /api/tripstore/v1/cart-items/shopping-carts/{id}
-    // Method: GET
-    @Transactional(readOnly = true)
-    @GetMapping("/cart-items/shopping-carts/{id}")
-    public ResponseEntity<List<CartItems>> getCartItemsByShoppingCartId(@PathVariable int id) {
-        return new ResponseEntity<>(cartItemsService.getCartItemsByShoppingCartId(id), HttpStatus.OK);
     }
 
     // Endpoint: /api/tripstore/v1/cart-items
@@ -56,7 +54,7 @@ public class CartItemsController {
     // Method: PUT
     @Transactional
     @PutMapping("/cart-items/{id}")
-    public ResponseEntity<CartItems> updateCartItems(@PathVariable int id, @RequestBody CartItems cartItems) {
+    public ResponseEntity<CartItems> updateCartItems(@PathVariable Long id, @RequestBody CartItems cartItems) {
         return new ResponseEntity<>(cartItemsService.updateCartItems(id, cartItems), HttpStatus.OK);
     }
 
@@ -64,7 +62,7 @@ public class CartItemsController {
     // Method: DELETE
     @Transactional
     @DeleteMapping("/cart-items/{id}")
-    public ResponseEntity<String> deleteCartItems(@PathVariable int id) {
+    public ResponseEntity<String> deleteCartItems(@PathVariable Long id) {
         cartItemsService.deleteCartItems(id);
         return new ResponseEntity<>("CartItems deleted successfully", HttpStatus.OK);
     }

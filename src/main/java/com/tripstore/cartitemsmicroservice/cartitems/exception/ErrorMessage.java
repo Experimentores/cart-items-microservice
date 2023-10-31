@@ -1,4 +1,4 @@
-package com.tripstore.cartitemsmicroservice.exception;
+package com.tripstore.cartitemsmicroservice.cartitems.exception;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;

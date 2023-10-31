@@ -1,4 +1,4 @@
-package com.tripstore.cartitemsmicroservice.model;
+package com.tripstore.cartitemsmicroservice.cartitems.domain.model;
 
 import jakarta.persistence.Entity;
 import lombok.AllArgsConstructor;
@@ -16,7 +16,7 @@ import jakarta.persistence.*;
 public class CartItems {
     @Id
     @GeneratedValue (strategy = GenerationType.IDENTITY)
-    private int id;
+    private Long id;
 
     @Column(name = "quantity", length = 50)
     private int productQuantity;
@@ -24,6 +24,6 @@ public class CartItems {
     @Column(name = "subtotal", length = 50)
     private double cartSubtotal;
 
-    /*@Column(name = "product_id", nullable = false)
-    private int productId;*/
+    @Column(name = "product_id", nullable = false)
+    private Long productId;
 }
