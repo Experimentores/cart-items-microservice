@@ -24,16 +24,14 @@ public class CartItemService extends CrudService<CartItem, Long> implements ICar
         return cartItemsRepository.findCartItemsByShoppingCartId(shoppingCartId);
    }
     @Override
-    public List<CartItem> findByProductQuantity(int productQuantity) {
-        return cartItemsRepository.findCartItemsByProductQuantity(productQuantity);
-    }
-    @Override
-    public List<CartItem> findByCartSubtotal(double cartSubtotal){
-        return cartItemsRepository.findCartItemsByCartSubtotal(cartSubtotal);
-    }
-    @Override
     @Transactional
     public  List<CartItem> deleteCartItemsByShoppingCartId(Long shoppingCartId){
         return cartItemsRepository.deleteCartItemsByShoppingCartId(shoppingCartId);
+    }
+
+    @Override
+    @Transactional
+    public List<CartItem> deleteCartItemsByProductId(Long productId) {
+        return cartItemsRepository.deleteCartItemByProductId(productId);
     }
 }

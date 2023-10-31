@@ -14,6 +14,12 @@ public class CartItemMapper implements IEntityMapper<CartItem, CartItemResource,
     public CartItem fromCreateResourceToModel(CreateCartItemResource scoreResource){
         return mapper.map(scoreResource, CartItem.class);
     }
+
+    @Override
+    public void fromCreateResourceToModel(CreateCartItemResource createCartItemResource, CartItem cartItem) {
+        mapper.map(createCartItemResource, cartItem);
+    }
+
     @Override
     public CartItemResource fromModelToResource(CartItem score){
         return mapper.map(score, CartItemResource.class);
@@ -21,5 +27,10 @@ public class CartItemMapper implements IEntityMapper<CartItem, CartItemResource,
     @Override
     public CartItem fromUpdateResourceToModel(CartItem cartItems){
         return cartItems;
+    }
+
+    @Override
+    public void fromUpdateResourceToModel(CartItem cartItem, CartItem cartItem2) {
+        mapper.map(cartItem, cartItem2);
     }
 }

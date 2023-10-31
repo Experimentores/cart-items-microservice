@@ -19,11 +19,14 @@ public class CartItem {
     private Long id;
 
     @Column(name = "quantity", length = 50)
-    private int productQuantity;
+    private int quantity;
 
     @Column(name = "subtotal", length = 50)
-    private double cartSubtotal;
+    private double subtotal;
 
     @Column(name = "shopping_cart_id", nullable = false)
     private Long shoppingCartId;
+
+    @Column(name = "product_id", nullable = false)
+    private Long productId;
 }

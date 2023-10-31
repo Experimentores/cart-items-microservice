@@ -9,5 +9,5 @@ import org.springframework.web.bind.annotation.RequestParam;
 @FeignClient(name="shopping-cart-service")
 public interface IShoppingCartClient {
     @GetMapping("{id}")
-    ShoppingCart getShoppingCartById(@PathVariable Long id, @RequestParam String getCartItems);
+    ShoppingCart getShoppingCartById(@PathVariable Long id, @RequestParam(required = false) boolean getCartItems);
 }

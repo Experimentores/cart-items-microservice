@@ -10,7 +10,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @SpringBootApplication
 @EnableFeignClients
 public class CartItemsMicroserviceApplication {
-
 	public static void main(String[] args) {
 		SpringApplication.run(CartItemsMicroserviceApplication.class, args);
 	}

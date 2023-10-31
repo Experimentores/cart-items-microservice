@@ -13,6 +13,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ShoppingCart {
     private Long id;
-    private LocalDateTime cartDateCreated;
-    private String cartStatus;
+    private LocalDateTime createdAt;
+    private String status;
 }
