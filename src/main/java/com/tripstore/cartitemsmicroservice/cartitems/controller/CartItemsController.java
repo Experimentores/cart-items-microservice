@@ -5,7 +5,6 @@ import com.crudjpa.util.TextDocumentation;
 import com.tripstore.cartitemsmicroservice.cartitems.domain.model.CartItem;
 import com.tripstore.cartitemsmicroservice.cartitems.domain.services.ICartItemService;
 import com.tripstore.cartitemsmicroservice.cartitems.exception.InvalidCreateResourceException;
-import com.tripstore.cartitemsmicroservice.cartitems.exception.ResourceNotFoundException;
 import com.tripstore.cartitemsmicroservice.cartitems.mapping.CartItemMapper;
 import com.tripstore.cartitemsmicroservice.cartitems.resources.CartItemResource;
 import com.tripstore.cartitemsmicroservice.cartitems.resources.CreateCartItemResource;
