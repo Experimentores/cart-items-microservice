@@ -24,10 +24,6 @@ public class CartItems {
     @Column(name = "subtotal", length = 50)
     private double cartSubtotal;
 
-    @Column(name = "product_id", nullable = false)
-    private int productId;
-
-    @Column(name = "shoppingcart_id", nullable = false)
-    private int shoppingCartId;
-
+    /*@Column(name = "product_id", nullable = false)
+    private int productId;*/
 }
