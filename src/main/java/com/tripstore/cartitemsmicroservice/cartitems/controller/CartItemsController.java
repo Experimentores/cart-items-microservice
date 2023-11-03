@@ -1,6 +1,8 @@
 package com.tripstore.cartitemsmicroservice.cartitems.controller;
 
 import com.crudjpa.controller.CrudController;
+import com.crudjpa.enums.MapFrom;
+import com.crudjpa.exception.ResourceNotFoundException;
 import com.crudjpa.util.TextDocumentation;
 import com.tripstore.cartitemsmicroservice.cartitems.domain.model.CartItem;
 import com.tripstore.cartitemsmicroservice.cartitems.domain.services.ICartItemService;
@@ -26,7 +28,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/tripstore/v1/cart-items/")
+@RequestMapping("${tripstore.cart-items-service.path}")
 public class CartItemsController extends CrudController<CartItem, Long, CartItemResource, CreateCartItemResource, CartItem> {
     private final ICartItemService cartItemsService;
     private final IShoppingCartClient shoppingCartClient;
@@ -38,80 +40,51 @@ public class CartItemsController extends CrudController<CartItem, Long, CartItem
         this.shoppingCartClient = shoppingCartClient;
         this.productClient = productClient;
     }
-    
+
+    @Override
+    protected CartItemResource fromModelToResource(CartItem cartItem, MapFrom from) {
+        CartItemResource resource = mapper.fromModelToResource(cartItem);
+        resource.setProduct(null);
+        resource.setShoppingCart(null);
+        if(from != MapFrom.ANY) {
+            Optional<ShoppingCart> shoppingCart = getShoppingCartFromId(cartItem.getShoppingCartId());
+            shoppingCart.ifPresent(resource::setShoppingCart);
+
+            Optional<Product> product = getProductFromId(cartItem.getProductId());
+            product.ifPresent(resource::setProduct);
+        }
+
+        return resource;
+    }
+
     private Optional<ShoppingCart> getShoppingCartFromId(Long shoppingCartId){
         try{
-            ShoppingCart shoppingCart = shoppingCartClient.getShoppingCartById(shoppingCartId, false);
-            return Optional.of(shoppingCart);
-        }catch (Exception e){
-            return Optional.empty();
-        }
+            ResponseEntity<ShoppingCart> response = shoppingCartClient.getShoppingCartById(shoppingCartId);
+            if(response.getStatusCode() == HttpStatus.OK)
+                return Optional.ofNullable(response.getBody());
+        } catch (Exception ignored) {}
+        return Optional.empty();
     }
 
     private Optional<Product> getProductFromId(Long productId) {
         try {
             ResponseEntity<Product> response = productClient.getProductById(productId);
-            return response.getStatusCode() == HttpStatus.OK ? Optional.ofNullable(response.getBody()) : Optional.empty();
-        } catch (Exception e) {
-            return Optional.empty();
-        }
+
+            if(response.getStatusCode() == HttpStatus.OK)
+                return Optional.ofNullable(response.getBody());
+        } catch (Exception ignored) {}
+        return Optional.empty();
     }
 
 
-    private List<CartItemResource> mapCartItems(List<CartItem> cartItems){
-        HashMap<Long, Optional<ShoppingCart>> shoppingCarts = new HashMap<>();
-        HashMap<Long, Optional<Product>> products = new HashMap<>();
-
-        return cartItems.stream().map(cartItem -> {
-                    // get shopping cart with id from map or call to client to try get
-                    Optional<ShoppingCart> shoppingCart = shoppingCarts.get(cartItem.getShoppingCartId());
-                    CartItemResource resource = mapper.fromModelToResource(cartItem);
-                    if(shoppingCart == null){
-                        shoppingCart = getShoppingCartFromId(cartItem.getShoppingCartId());
-                        shoppingCarts.put(cartItem.getShoppingCartId(), shoppingCart);
-                    }
-                    shoppingCart.ifPresentOrElse(resource::setShoppingCart, () -> resource.setShoppingCart(null));
-
-                    // get product with id from map or call to client to try get
-                    Optional<Product> product = products.get(cartItem.getProductId());
-                    if(product == null) {
-                        product = getProductFromId(cartItem.getProductId());
-                        products.put(cartItem.getProductId(), product);
-                    }
-
-                    product.ifPresentOrElse(resource::setProduct, () -> resource.setProduct(null));
-
-                    return resource;
-                }).toList();
-    }
-
-    private CartItem getCartItem(Long id) {
-        Optional<CartItem> cartItem = cartItemsService.getById(id);
-        if(cartItem.isEmpty())
-            throw new ResourceNotFoundException("Cart Item with id: " + id + " not found");
-        return cartItem.get();
-    }
-
-    private CartItemResource getCartItemResource(CartItem cartItem){
-        // get shopping cart switch id from client and set to resource if it could get it
-        CartItemResource resource = mapper.fromModelToResource(cartItem);
-        Optional<ShoppingCart> shoppingCart = getShoppingCartFromId(cartItem.getShoppingCartId());
-        shoppingCart.ifPresentOrElse(resource::setShoppingCart, () -> resource.setShoppingCart(null));
-
-        // get product switch id from client and set to resource if it could get it
-        Optional<Product> product = getProductFromId(cartItem.getProductId());
-        product.ifPresentOrElse(resource::setProduct, () -> resource.setProduct(null));
-        return resource;
-    }
     @GetMapping(value = "{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Cart Item" + TextDocumentation.FOUND),
             @ApiResponse(responseCode = "404", description = "Cart Item" + TextDocumentation.NOT_FOUND),
             @ApiResponse(responseCode = "501", description = TextDocumentation.INTERNAL_SERVER_ERROR)
     })
-    public ResponseEntity<CartItemResource> getCartItemById(@PathVariable Long id) throws Exception {
-        CartItem cartItem = getCartItem(id);
-        return ResponseEntity.ok(getCartItemResource(cartItem));
+    public ResponseEntity<CartItemResource> getCartItemById(@PathVariable Long id) {
+        return getById(id);
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -121,61 +94,72 @@ public class CartItemsController extends CrudController<CartItem, Long, CartItem
             @ApiResponse(responseCode = "500", description = TextDocumentation.INTERNAL_SERVER_ERROR),
     })
     public ResponseEntity<List<CartItemResource>> getAllCartItems() {
-        List<CartItem> cartItems = cartItemsService.getAll();
-        return ResponseEntity.ok(mapCartItems(cartItems));
+        return getAll();
     }
 
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<CartItemResource> createCartItem(@Valid @RequestBody CreateCartItemResource cartItemResource, BindingResult result) {
-        if(result.hasErrors()) {
+        if(result.hasErrors())
             throw new InvalidCreateResourceException(getErrorsFromResult(result));
-        }
 
-        // validate that a shopping cart with the given id exists
-        Optional<ShoppingCart> shoppingCart = getShoppingCartFromId(cartItemResource.getShoppingCartId());
-        if(shoppingCart.isEmpty())
-            throw new InvalidCreateResourceException("The shopping cart id isn't valid");
-
-        // validate that a product with the given id exists
-        Optional<Product> product = getProductFromId(cartItemResource.getProductId());
-        if(product.isEmpty())
-            throw new InvalidCreateResourceException("The product id isn't valid");
-
-        CartItem cartItem = cartItemsService.save(mapper.fromCreateResourceToModel(cartItemResource));
-        CartItemResource resource = mapper.fromModelToResource(cartItem);
-        resource.setShoppingCart(shoppingCart.get());
-        resource.setProduct(product.get());
-
-        return new ResponseEntity<>(resource, HttpStatus.CREATED);
+        return insert(cartItemResource);
     }
 
     @DeleteMapping(value = "{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<CartItemResource> deleteCartItem(@PathVariable Long id) {
-        CartItem item = getCartItem(id);
-        cartItemsService.delete(id);
-        return ResponseEntity.ok(getCartItemResource(item));
+        return delete(id);
+    }
+
+
+    private List<CartItemResource> mapCartItemsResourceOfShoppingCarts(List<CartItem> shoppingCarts) {
+        return shoppingCarts.stream()
+                .map(cartItem -> {
+                   CartItemResource resource = mapper.fromModelToResource(cartItem);
+                   resource.setProduct(null);
+
+                   Optional<Product> product = getProductFromId(cartItem.getProductId());
+                   product.ifPresent(resource::setProduct);
+
+                   return resource;
+                }).toList();
+    }
+
+    ResponseEntity<List<CartItemResource>> cartItemsResponseOfShoppingCarts(List<CartItem> cartItems) {
+        if(cartItems.isEmpty())
+            return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(mapCartItemsResourceOfShoppingCarts(cartItems));
     }
 
     @GetMapping(value = "shopping-carts/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<CartItemResource>> getByShoppingCartId(@PathVariable Long id) {
         List<CartItem> cartItems = cartItemsService.findByShoppingCartId(id);
-        return ResponseEntity.ok(mapCartItems(cartItems));
+        return cartItemsResponseOfShoppingCarts(cartItems);
     }
 
     @DeleteMapping(value = "shopping-carts/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<CartItemResource>> deleteByShoppingCartId(@PathVariable Long id) {
         List<CartItem> cartItems = cartItemsService.deleteCartItemsByShoppingCartId(id);
-        return ResponseEntity.ok(mapCartItems(cartItems));
+
+        return cartItemsResponseOfShoppingCarts(cartItems);
     }
 
     @DeleteMapping(value = "products/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<CartItemResource>> deleteByProductId(@PathVariable Long id) {
         List<CartItem> cartItems = cartItemsService.deleteCartItemsByProductId(id);
-        return ResponseEntity.ok(mapCartItems(cartItems));
+        return cartItemsResponseOfShoppingCarts(cartItems);
     }
 
     @Override
     protected boolean isValidCreateResource(CreateCartItemResource resource){
+        // validate that a shopping cart with the given id exists
+        Optional<ShoppingCart> shoppingCart = getShoppingCartFromId(resource.getShoppingCartId());
+        if(shoppingCart.isEmpty())
+            throw new InvalidCreateResourceException("The shopping cart id isn't valid");
+
+        // validate that a product with the given id exists
+        Optional<Product> product = getProductFromId(resource.getProductId());
+        if(product.isEmpty())
+            throw new InvalidCreateResourceException("The product id isn't valid");
         return true;
     }
     @Override
