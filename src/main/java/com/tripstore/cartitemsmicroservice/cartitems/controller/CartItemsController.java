@@ -2,7 +2,7 @@ package com.tripstore.cartitemsmicroservice.cartitems.controller;
 
 import com.crudjpa.controller.CrudController;
 import com.crudjpa.enums.MapFrom;
-import com.crudjpa.exception.ResourceNotFoundException;
+import com.crudjpa.util.HttpStatusCheckCode;
 import com.crudjpa.util.TextDocumentation;
 import com.tripstore.cartitemsmicroservice.cartitems.domain.model.CartItem;
 import com.tripstore.cartitemsmicroservice.cartitems.domain.services.ICartItemService;
@@ -13,17 +13,14 @@ import com.tripstore.cartitemsmicroservice.cartitems.resources.CreateCartItemRes
 import com.tripstore.cartitemsmicroservice.products.client.IProductClient;
 import com.tripstore.cartitemsmicroservice.products.domain.model.Product;
 import com.tripstore.cartitemsmicroservice.shoppingcart.client.IShoppingCartClient;
-import com.tripstore.cartitemsmicroservice.shoppingcart.domain.model.ShoppingCart;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,11 +42,7 @@ public class CartItemsController extends CrudController<CartItem, Long, CartItem
     protected CartItemResource fromModelToResource(CartItem cartItem, MapFrom from) {
         CartItemResource resource = mapper.fromModelToResource(cartItem);
         resource.setProduct(null);
-        resource.setShoppingCart(null);
         if(from != MapFrom.ANY) {
-            Optional<ShoppingCart> shoppingCart = getShoppingCartFromId(cartItem.getShoppingCartId());
-            shoppingCart.ifPresent(resource::setShoppingCart);
-
             Optional<Product> product = getProductFromId(cartItem.getProductId());
             product.ifPresent(resource::setProduct);
         }
@@ -57,10 +50,10 @@ public class CartItemsController extends CrudController<CartItem, Long, CartItem
         return resource;
     }
 
-    private Optional<ShoppingCart> getShoppingCartFromId(Long shoppingCartId){
+    private Optional<?> getShoppingCartFromId(Long shoppingCartId){
         try{
-            ResponseEntity<ShoppingCart> response = shoppingCartClient.getShoppingCartById(shoppingCartId);
-            if(response.getStatusCode() == HttpStatus.OK)
+            ResponseEntity<?> response = shoppingCartClient.getShoppingCartById(shoppingCartId);
+            if(HttpStatusCheckCode.from(response).isOk())
                 return Optional.ofNullable(response.getBody());
         } catch (Exception ignored) {}
         return Optional.empty();
@@ -70,8 +63,9 @@ public class CartItemsController extends CrudController<CartItem, Long, CartItem
         try {
             ResponseEntity<Product> response = productClient.getProductById(productId);
 
-            if(response.getStatusCode() == HttpStatus.OK)
+            if(HttpStatusCheckCode.from(response).isOk())
                 return Optional.ofNullable(response.getBody());
+
         } catch (Exception ignored) {}
         return Optional.empty();
     }
@@ -139,7 +133,6 @@ public class CartItemsController extends CrudController<CartItem, Long, CartItem
     @DeleteMapping(value = "shopping-carts/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<CartItemResource>> deleteByShoppingCartId(@PathVariable Long id) {
         List<CartItem> cartItems = cartItemsService.deleteCartItemsByShoppingCartId(id);
-
         return cartItemsResponseOfShoppingCarts(cartItems);
     }
 
@@ -149,10 +142,15 @@ public class CartItemsController extends CrudController<CartItem, Long, CartItem
         return cartItemsResponseOfShoppingCarts(cartItems);
     }
 
+    @RequestMapping(value = "healthcheck", method = RequestMethod.HEAD)
+    ResponseEntity<Void> isOk() {
+        return ResponseEntity.ok().build();
+    }
+
     @Override
     protected boolean isValidCreateResource(CreateCartItemResource resource){
         // validate that a shopping cart with the given id exists
-        Optional<ShoppingCart> shoppingCart = getShoppingCartFromId(resource.getShoppingCartId());
+        Optional<?> shoppingCart = getShoppingCartFromId(resource.getShoppingCartId());
         if(shoppingCart.isEmpty())
             throw new InvalidCreateResourceException("The shopping cart id isn't valid");
 
