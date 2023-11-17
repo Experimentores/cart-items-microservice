@@ -107,15 +107,7 @@ public class CartItemsController extends CrudController<CartItem, Long, CartItem
 
     private List<CartItemResource> mapCartItemsResourceOfShoppingCarts(List<CartItem> shoppingCarts) {
         return shoppingCarts.stream()
-                .map(cartItem -> {
-                   CartItemResource resource = mapper.fromModelToResource(cartItem);
-                   resource.setProduct(null);
-
-                   Optional<Product> product = getProductFromId(cartItem.getProductId());
-                   product.ifPresent(resource::setProduct);
-
-                   return resource;
-                }).toList();
+                .map(cartItem -> this.fromModelToResource(cartItem, MapFrom.GET)).toList();
     }
 
     ResponseEntity<List<CartItemResource>> cartItemsResponseOfShoppingCarts(List<CartItem> cartItems) {

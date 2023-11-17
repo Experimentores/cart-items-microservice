@@ -13,5 +13,4 @@ public class CartItemResource {
     private int quantity;
     private double subtotal;
     private Product product;
-    private Long shoppingCartId;
 }
